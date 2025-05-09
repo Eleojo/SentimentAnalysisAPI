@@ -1,23 +1,43 @@
-﻿using Microsoft.ML;
-using SentimentAnalysisAPI.MLModels;
+﻿
+using SentimentAnalysisAPI.Models;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace SentimentAnalysisAPI.Services
 {
-    public class SentimentService
-    {
-        private readonly PredictionEngine<SentimentData, SentimentPrediction> _engine;
 
-        public SentimentService()
+    public class SentimentService : ISentimentService
+    {
+        private readonly HttpClient _httpClient;
+
+        public SentimentService(HttpClient httpClient)
         {
-            var context = new MLContext();
-            var model = context.Model.Load("MLModels/sentiment-model.zip", out _);
-            _engine = context.Model.CreatePredictionEngine<SentimentData, SentimentPrediction>(model);
+            _httpClient = httpClient;
         }
 
-        public string Predict(string input)
+        public async Task<SentimentResponse> AnalyzeSentimentAsync(SentimentRequest request)
         {
-            var prediction = _engine.Predict(new SentimentData { Text = input });
-            return prediction.Prediction ? "Positive" : "Negative";
+            var json = JsonSerializer.Serialize(request);
+            Console.WriteLine($"Sending: {json}");
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("http://127.0.0.1:8000/analyze", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException(
+                    $"Python API returned error {response.StatusCode}: {errorContent}");
+            }
+
+
+            var responseJson = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<SentimentResponse>(
+                responseJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
         }
     }
+
 }

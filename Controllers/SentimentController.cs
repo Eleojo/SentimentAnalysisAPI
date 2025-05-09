@@ -1,24 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SentimentAnalysisAPI.Models;
 using SentimentAnalysisAPI.Services;
 
 namespace SentimentAnalysisAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class SentimentController : ControllerBase
     {
-        private readonly SentimentService _sentimentService;
+        private readonly ISentimentService _sentimentService;
 
-        public SentimentController(SentimentService sentimentService)
+        public SentimentController(ISentimentService sentimentService)
         {
             _sentimentService = sentimentService;
         }
 
-        [HttpPost]
-        public IActionResult Predict([FromBody] string input)
+        [HttpPost("analyze")]
+        public async Task<ActionResult<SentimentResponse>> Analyze([FromBody] SentimentRequest request)
         {
-            var result = _sentimentService.Predict(input);
-            return Ok(new { Sentiment = result });
+            var result = await _sentimentService.AnalyzeSentimentAsync(request);
+            return Ok(result);
         }
     }
 }

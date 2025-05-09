@@ -1,5 +1,4 @@
-﻿using SentimentAnalysisAPI.MLModels;
-using SentimentAnalysisAPI.Services;
+﻿using SentimentAnalysisAPI.Services;
 
 namespace SentimentAnalysisAPI
 {
@@ -10,11 +9,12 @@ namespace SentimentAnalysisAPI
             var builder = WebApplication.CreateBuilder(args);
 
             // Train the ML model once at startup
-            MLModelBuilder.TrainAndSaveModel();
 
             // Register services
             builder.Services.AddControllers();
-            builder.Services.AddSingleton<SentimentService>();
+            // Add this to your Program.cs before building the app
+            builder.Services.AddHttpClient<ISentimentService, SentimentService>();
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
